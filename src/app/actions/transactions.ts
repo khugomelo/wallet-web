@@ -2,7 +2,7 @@
 
 /** Mutations and reads for movements: CRUD, splits, attachments, recurrence generation, modal helpers. */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/activity-log";
 import { expenseIsEffectivelyEssential } from "@/lib/expense-essential";
 import { incomeScopeForInsert, type IncomeScope } from "@/lib/income-scope";
@@ -614,9 +614,7 @@ export async function createTransaction(params: {
   income_scope?: IncomeScope | null;
 }): Promise<{ error?: string; id?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const {
@@ -962,9 +960,7 @@ export async function updateTransaction(
   }
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: old } = await supabase
@@ -1322,9 +1318,7 @@ export async function deleteTransaction(id: string): Promise<{ error?: string }>
 
 export async function confirmTransaction(id: string): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: t } = await supabase

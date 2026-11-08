@@ -2,7 +2,7 @@
 
 /** Yearly statements by category and savings/investment aggregates. */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import {
     getIncomeReceiverMemberIdsForOrFilter,
     transactionsForWalletOrReceiverUserIncomes,
@@ -200,9 +200,7 @@ export async function getStatementsByCategory(
     endDate: string
 ): Promise<StatementsResult> {
     const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthUser();
 
     const catsPromise = supabase
         .from("categories")
@@ -421,9 +419,7 @@ export async function getAvailableYears(
     mode: StatementsViewMode = "incomeExpenses"
 ): Promise<number[]> {
     const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    const user = await getAuthUser();
 
     let transactions: { date: string }[] = [];
     let error: { message: string } | null = null;

@@ -2,7 +2,7 @@
 
 /** CSV export: confirmed expenses with each member's share "as if everyone had settled". */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { expenseShares, type SplitMethod } from "@/lib/expense-shares";
 import { expenseIsEffectivelyEssential } from "@/lib/expense-essential";
 import { isSharedSplitWallet } from "@/lib/wallet-modes";
@@ -52,9 +52,7 @@ export async function getExpensesForExport(params: {
   if (!params.walletIds.length) return { error: "Select at least one wallet" };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   try {

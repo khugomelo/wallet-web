@@ -1,10 +1,10 @@
 /**
  * Authenticated shell: theme, wallet list + cookie, global transaction modals, sidebar + main outlet.
  */
-import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/server";
+import { getActiveWallets, getProfileForRequest } from "@/lib/request-cache";
 import { redirect } from "next/navigation";
 import { getWalletCookie } from "@/app/actions/wallet-cookie";
-import { getOrEnsureProfile } from "@/app/actions/profiles";
 import { TransactionModalsProvider } from "@/contexts/TransactionModalsContext";
 import { ThemeProvider, ThemeScript } from "@/contexts/ThemeContext";
 import { WalletProvider } from "@/contexts/WalletContext";
@@ -16,27 +16,19 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) redirect("/login");
 
-  const profile = await getOrEnsureProfile(user.id, user.user_metadata as { first_name?: string | null; last_name?: string | null } | undefined);
+  const [profile, list, cookie] = await Promise.all([
+    getProfileForRequest(user.id),
+    getActiveWallets(),
+    getWalletCookie(),
+  ]);
   const firstName = (profile.first_name ?? "").trim() || null;
   const theme = profile.theme ?? "system";
   const meta = user.user_metadata as { avatar_url?: string } | undefined;
   const avatarUrl = profile.avatar_url?.trim() || meta?.avatar_url?.trim() || null;
 
-  const { data: wallets } = await supabase
-    .from("wallets")
-    .select("*")
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .order("name");
-  const list = wallets ?? [];
-
-  const cookie = await getWalletCookie();
   const currentWalletId =
     (cookie && list.some((w) => w.id === cookie)) ? cookie : list[0]?.id ?? null;
 

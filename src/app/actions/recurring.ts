@@ -2,7 +2,7 @@
 
 /** Recurring rules: read/update/delete and generation helpers used with transactions. */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { createTransaction } from "@/app/actions/transactions";
 import { incomeScopeForInsert } from "@/lib/income-scope";
 import {
@@ -93,9 +93,7 @@ export async function updateRecurringRule(
   }
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: rule } = await supabase
@@ -241,9 +239,7 @@ export async function updateRecurringRule(
 /** Delete a recurring rule. Related transactions keep their data; recurring_rule_id is set to NULL. */
 export async function deleteRecurringRule(id: string): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase.from("recurring_rules").delete().eq("id", id);

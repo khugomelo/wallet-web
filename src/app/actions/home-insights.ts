@@ -155,15 +155,20 @@ export async function getHomeBriefing(
   customRange?: { start: string; end: string } | null
 ): Promise<BriefingData> {
   const supabase = await createClient();
-  const { data: latestTx } = await supabase
-    .from("transactions")
-    .select("date")
-    .eq("wallet_id", walletId)
-    .eq("status", "confirmed")
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Independent of each other: start together instead of one after another.
+  const newsPromise = fetchLocalizedNews(locale);
+  const [{ data: latestTx }, { data: categories }] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("date")
+      .eq("wallet_id", walletId)
+      .eq("status", "confirmed")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("categories").select("id, name, parent_id").eq("wallet_id", walletId),
+  ]);
 
   const latestDate = latestTx?.date ? new Date(`${latestTx.date}T00:00:00Z`) : null;
   const today = new Date();
@@ -177,14 +182,10 @@ export async function getHomeBriefing(
   const previousMonthRange = monthRangeUTC(prevYear, prevMonth);
   const hasAnyTransactions = !!latestDate;
 
-  const { data: categories } = await supabase
-    .from("categories")
-    .select("id, name, parent_id")
-    .eq("wallet_id", walletId);
   const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
   if (!hasAnyTransactions) {
-    const news = await fetchLocalizedNews(locale);
+    const news = await newsPromise;
     const fact = factForLocale(locale);
     return {
       anchorYear: year,
@@ -451,7 +452,7 @@ export async function getHomeBriefing(
     prevDiningOut > 0
       ? ((diningOutAmount - prevDiningOut) / prevDiningOut) * 100
       : null;
-  const news = await fetchLocalizedNews(locale);
+  const news = await newsPromise;
   const fact = factForLocale(locale);
 
   const anchorYearOut =

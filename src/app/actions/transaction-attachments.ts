@@ -2,7 +2,7 @@
 
 /** Transaction file attachments: upload metadata and storage integration. */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import {
   sanitizeStorageFileName,
   validateTransactionAttachmentFile,
@@ -30,9 +30,7 @@ export async function uploadTransactionAttachment(
   if (err) return { error: err };
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: tx } = await supabase
@@ -82,9 +80,7 @@ export async function uploadTransactionAttachment(
 
 export async function deleteTransactionAttachment(attachmentId: string): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: row } = await supabase
@@ -106,9 +102,7 @@ export async function getTransactionAttachmentSignedUrl(
   attachmentId: string
 ): Promise<{ error?: string; url?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: row } = await supabase

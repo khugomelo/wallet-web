@@ -2,6 +2,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getWalletCookie } from "@/app/actions/wallet-cookie";
 import { getActiveWalletContext } from "@/lib/active-wallet-server";
+import { getActiveWallets } from "@/lib/request-cache";
 import { ensureRecurringGenerated } from "@/app/actions/transactions";
 import { getWalletSettlements } from "@/app/actions/wallets";
 import { CurrentBalancesSection } from "@/components/CurrentBalancesSection";
@@ -19,7 +20,7 @@ export default async function PortfolioPage({
     const t = await getTranslations("portfolio");
     const supabase = await createClient();
     const cookie = await getWalletCookie();
-    const { currentWalletId } = await getActiveWalletContext(supabase, cookie);
+    const { currentWalletId } = await getActiveWalletContext(cookie);
 
     let accounts: {
         id: string;
@@ -53,63 +54,63 @@ export default async function PortfolioPage({
             : currentMonth;
 
     if (currentWalletId) {
-        await ensureRecurringGenerated(currentWalletId);
-
-        const [{ data: walletData }, { data: accountsData }] = await Promise.all([
-            supabase
-                .from("wallets")
-                .select("shared_option, split_type, name")
-                .eq("id", currentWalletId)
-                .single(),
+        // Recurring generation only adds held pending rows, which nothing below reads: run it alongside.
+        const [, { data: accountsData }, walletList] = await Promise.all([
+            ensureRecurringGenerated(currentWalletId),
             supabase
                 .from("accounts")
                 .select("id, name, account_type, initial_balance, current_balance, plafond")
                 .eq("wallet_id", currentWalletId)
                 .eq("is_active", true),
+            getActiveWallets(),
         ]);
+        const walletData = walletList.find((w) => w.id === currentWalletId);
         walletSharedOption = walletData?.shared_option ?? null;
         walletSplitType = walletData?.split_type ?? null;
         walletName = walletData?.name ?? null;
 
-        if (walletSharedOption === "split" || walletSharedOption === "track_and_split") {
-            const [{ data: minTx }, { data: maxTx }] = await Promise.all([
-                supabase
-                    .from("transactions")
-                    .select("date")
-                    .eq("wallet_id", currentWalletId)
-                    .order("date", { ascending: true })
-                    .limit(1),
-                supabase
-                    .from("transactions")
-                    .select("date")
-                    .eq("wallet_id", currentWalletId)
-                    .order("date", { ascending: false })
-                    .limit(1),
-            ]);
-            const minYear = minTx?.[0]?.date ? Number(String(minTx[0].date).slice(0, 4)) : currentYear;
-            const maxYear = maxTx?.[0]?.date ? Number(String(maxTx[0].date).slice(0, 4)) : currentYear;
-            availableYears = Array.from({ length: Math.max(1, maxYear - minYear + 1) }, (_, i) => minYear + i);
+        const settlementsTask = (async () => {
+            if (walletSharedOption === "split" || walletSharedOption === "track_and_split") {
+                const [{ data: minTx }, { data: maxTx }] = await Promise.all([
+                    supabase
+                        .from("transactions")
+                        .select("date")
+                        .eq("wallet_id", currentWalletId)
+                        .order("date", { ascending: true })
+                        .limit(1),
+                    supabase
+                        .from("transactions")
+                        .select("date")
+                        .eq("wallet_id", currentWalletId)
+                        .order("date", { ascending: false })
+                        .limit(1),
+                ]);
+                const minYear = minTx?.[0]?.date ? Number(String(minTx[0].date).slice(0, 4)) : currentYear;
+                const maxYear = maxTx?.[0]?.date ? Number(String(maxTx[0].date).slice(0, 4)) : currentYear;
+                availableYears = Array.from({ length: Math.max(1, maxYear - minYear + 1) }, (_, i) => minYear + i);
 
-            const selectedYearForWallet =
-                Number.isInteger(requestedYear) && availableYears.includes(requestedYear)
-                    ? requestedYear
-                    : currentYear;
-            const selectedMonthForWallet =
-                Number.isInteger(requestedMonth) && requestedMonth >= 1 && requestedMonth <= 12
-                    ? requestedMonth
-                    : currentMonth;
-            activeYear = selectedYearForWallet;
-            activeMonth = selectedMonthForWallet;
+                const selectedYearForWallet =
+                    Number.isInteger(requestedYear) && availableYears.includes(requestedYear)
+                        ? requestedYear
+                        : currentYear;
+                const selectedMonthForWallet =
+                    Number.isInteger(requestedMonth) && requestedMonth >= 1 && requestedMonth <= 12
+                        ? requestedMonth
+                        : currentMonth;
+                activeYear = selectedYearForWallet;
+                activeMonth = selectedMonthForWallet;
 
-            const { settlements: settle } = await getWalletSettlements(currentWalletId, {
-                year: selectedYearForWallet,
-                month: periodType === "monthly" ? selectedMonthForWallet : undefined,
-                granularity: periodType === "yearly" ? "year" : "month",
-            });
-            if (settle) {
-                settlements = settle;
+                const { settlements: settle } = await getWalletSettlements(currentWalletId, {
+                    year: selectedYearForWallet,
+                    month: periodType === "monthly" ? selectedMonthForWallet : undefined,
+                    granularity: periodType === "yearly" ? "year" : "month",
+                });
+                if (settle) {
+                    settlements = settle;
+                }
             }
-        }
+        })();
+        settlementsTask.catch(() => {}); // still rethrown by the await below; avoids an unhandled-rejection crash meanwhile
 
         const data = accountsData;
         const accountIds = (data ?? []).map((a) => a.id);
@@ -175,6 +176,7 @@ export default async function PortfolioPage({
         }));
         totalInitialBalance = accounts.reduce((s, a) => s + a.initial_balance, 0);
         totalBalance = accounts.reduce((s, a) => s + a.current_balance, 0);
+        await settlementsTask;
     }
 
     const periodStart =

@@ -1,5 +1,5 @@
 /** Transactions hub: movements, pending confirmations, and recurring rules (RSC, force-dynamic). */
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { getWalletCookie } from "@/app/actions/wallet-cookie";
 import { getActiveWalletContext } from "@/lib/active-wallet-server";
 import { ensureRecurringGenerated } from "@/app/actions/transactions";
@@ -27,7 +27,7 @@ export default async function TransactionsPage() {
     const t = await getTranslations("transactions");
     const supabase = await createClient();
     const cookie = await getWalletCookie();
-    const { currentWalletId } = await getActiveWalletContext(supabase, cookie);
+    const { currentWalletId } = await getActiveWalletContext(cookie);
 
     let transactions: HubTxDisplay[] = [];
     let pending: PendingRow[] = [];
@@ -36,15 +36,14 @@ export default async function TransactionsPage() {
     let confirmedHubHasMore = false;
 
     if (currentWalletId) {
-        await ensureRecurringGenerated(currentWalletId);
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-
-        const incomeReceiverIds =
+        const user = await getAuthUser();
+        // Recurring rows must exist before the pending query below; the receiver lookup can run meanwhile.
+        const [, incomeReceiverIds] = await Promise.all([
+            ensureRecurringGenerated(currentWalletId),
             user?.id != null
-                ? await getIncomeReceiverMemberIdsForOrFilter(supabase, currentWalletId, user.id)
-                : [];
+                ? getIncomeReceiverMemberIdsForOrFilter(supabase, currentWalletId, user.id)
+                : Promise.resolve([] as string[]),
+        ]);
 
         const pendingTxQuery = supabase
             .from("transactions")

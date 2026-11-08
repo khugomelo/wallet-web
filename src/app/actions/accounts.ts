@@ -2,7 +2,7 @@
 
 /** Accounts per wallet: list, create, update, balances. */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/activity-log";
 import type { AccountType } from "@/lib/account-types";
 import { accountTypeLabel } from "@/lib/account-types";
@@ -23,9 +23,7 @@ export async function createAccount(params: {
   plafond?: number | null;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
   if (
     !params.account_type ||
@@ -80,9 +78,7 @@ export async function updateAccount(
   }
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: existing } = await supabase

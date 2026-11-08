@@ -1,6 +1,6 @@
 /** Profile settings: display name, theme, locale, devices, and preferences (RSC). */
-import { createClient } from "@/lib/supabase/server";
-import { getOrEnsureProfile } from "@/app/actions/profiles";
+import { getAuthUser } from "@/lib/supabase/server";
+import { getProfileForRequest } from "@/lib/request-cache";
 import { DevicesSection } from "@/components/DevicesSection";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { ProfileSettingsForm } from "@/components/ProfileSettingsForm";
@@ -12,13 +12,10 @@ export const dynamic = "force-dynamic";
 
 export default async function ProfileSettingsPage() {
   const t = await getTranslations('settings');
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return null;
 
-  const profile = await getOrEnsureProfile(user.id, user.user_metadata as { first_name?: string | null; last_name?: string | null } | undefined);
+  const profile = await getProfileForRequest(user.id);
 
   return (
     <div className="space-y-10">

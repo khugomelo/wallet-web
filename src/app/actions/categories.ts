@@ -2,7 +2,7 @@
 
 /** Wallet categories and subcategories: CRUD and lookups for transaction forms. */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/activity-log";
 
 const PROTECTED_SALARY_NAMES = new Set(["salary", "salario", "salaire"]);
@@ -42,9 +42,7 @@ export async function createCategory(params: {
   is_essential?: boolean;
 }): Promise<{ error?: string; id?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const isEssential = params.type === "expense" && !!params.is_essential;
@@ -338,9 +336,7 @@ export async function getCopyableCategories(
   type: "income" | "expense" | "transfer"
 ): Promise<{ groups?: CopyableCategoryGroup[]; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: memberships, error: memberErr } = await supabase
@@ -400,9 +396,7 @@ export async function copyCategoriesToWallet(params: {
   root_category_ids: string[];
 }): Promise<{ copiedCount?: number; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
   if (!params.root_category_ids.length) return { copiedCount: 0 };
 

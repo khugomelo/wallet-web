@@ -2,7 +2,6 @@
 import { getWalletCookie } from "@/app/actions/wallet-cookie";
 import { getHomeBriefing, type HomeInsightsPeriod } from "@/app/actions/home-insights";
 import { HomeSmartBriefing } from "@/components/HomeSmartBriefing";
-import { createClient } from "@/lib/supabase/server";
 import { getActiveWalletContext } from "@/lib/active-wallet-server";
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -31,9 +30,8 @@ export default async function HomePage({
 }) {
   const t = await getTranslations("home");
   const locale = (await getLocale()) as "en" | "pt" | "es" | "fr";
-  const supabase = await createClient();
   const cookie = await getWalletCookie();
-  const { currentWalletId } = await getActiveWalletContext(supabase, cookie);
+  const { currentWalletId } = await getActiveWalletContext(cookie);
   const { period: selectedPeriod, customRange } = parseHomePeriod(searchParams);
 
   const briefing = currentWalletId

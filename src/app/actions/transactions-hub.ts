@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { getWalletCookie } from "@/app/actions/wallet-cookie";
 import { getActiveWalletContext } from "@/lib/active-wallet-server";
 import {
@@ -33,13 +33,11 @@ export async function loadMoreHubConfirmedTransactions(offset: number): Promise<
   }
   const supabase = await createClient();
   const cookie = await getWalletCookie();
-  const { currentWalletId } = await getActiveWalletContext(supabase, cookie);
+  const { currentWalletId } = await getActiveWalletContext(cookie);
   if (!currentWalletId) {
     return { rows: [], hasMore: false, error: "no_wallet" };
   }
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
 
   const incomeReceiverIds =
     user?.id != null

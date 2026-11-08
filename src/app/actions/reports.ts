@@ -1,6 +1,6 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { getWalletCookie } from "@/app/actions/wallet-cookie";
 import { ensureRecurringGenerated } from "@/app/actions/transactions";
 import { getWalletSplitInfo } from "@/app/actions/wallets";
@@ -28,7 +28,7 @@ export async function getReportsData() {
     noStore();
     const supabase = await createClient();
     const cookie = await getWalletCookie();
-    const { currentWalletId, walletTracksBalances } = await getActiveWalletContext(supabase, cookie);
+    const { currentWalletId, walletTracksBalances } = await getActiveWalletContext(cookie);
 
     let chartData: { name: string; value: number }[] = [];
     let totalIncome = 0;
@@ -89,16 +89,14 @@ export async function getReportsData() {
     let recurringNextRuns: CalendarRecurringNextRun[] = [];
 
     if (currentWalletId) {
-        await ensureRecurringGenerated(currentWalletId);
-
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-
-        const incomeReceiverIds =
+        const user = await getAuthUser();
+        // Recurring rows must exist before the queries below; the receiver lookup can run meanwhile.
+        const [, incomeReceiverIds] = await Promise.all([
+            ensureRecurringGenerated(currentWalletId),
             user?.id != null
-                ? await getIncomeReceiverMemberIdsForOrFilter(supabase, currentWalletId, user.id)
-                : [];
+                ? getIncomeReceiverMemberIdsForOrFilter(supabase, currentWalletId, user.id)
+                : Promise.resolve([] as string[]),
+        ]);
 
         type CategoryRow = { id: string; name: string; parent_id: string | null; is_essential?: boolean | null };
         type TxRow = {
@@ -139,6 +137,8 @@ export async function getReportsData() {
             { data: cats },
             { data: tx },
             { data: rules },
+            { data: walletMembers },
+            splitInfo,
         ] = await Promise.all([
             supabase.from("accounts").select("id, name, current_balance").eq("wallet_id", currentWalletId),
             supabase.from("categories").select("id, name, parent_id").eq("wallet_id", currentWalletId),
@@ -148,11 +148,9 @@ export async function getReportsData() {
                 .select("id, type, amount, description, category_id, account_from_id, account_to_id, recurrence_type, interval_months, interval_days, work_day_index, next_run_date, is_active, end_date")
                 .eq("wallet_id", currentWalletId)
                 .order("next_run_date", { ascending: true }),
+            supabase.from("wallet_members").select("user_id, member_name").eq("wallet_id", currentWalletId),
+            getWalletSplitInfo(currentWalletId),
         ]);
-        const { data: walletMembers } = await supabase
-            .from("wallet_members")
-            .select("user_id, member_name")
-            .eq("wallet_id", currentWalletId);
         const memberIds = Array.from(new Set((walletMembers ?? []).map((m) => m.user_id).filter(Boolean)));
         const { data: profiles } = memberIds.length
             ? await supabase.from("profiles").select("id, first_name, last_name, email").in("id", memberIds)
@@ -179,7 +177,6 @@ export async function getReportsData() {
             })
         );
         // Align with wallet split/users naming logic used in other screens.
-        const splitInfo = await getWalletSplitInfo(currentWalletId);
         for (const m of splitInfo.members ?? []) {
             const n = firstName(m.display_name);
             if (n) memberNameById.set(m.user_id, n);
@@ -211,22 +208,17 @@ export async function getReportsData() {
             if (t.account_to_id) accountIdsNeeded.add(t.account_to_id);
         }
         const missingCatIds = Array.from(catIdsNeeded).filter((id) => !catIdToName.has(id));
-        if (missingCatIds.length) {
-            const { data: extraCats } = await supabase
-                .from("categories")
-                .select("id, name, parent_id")
-                .in("id", missingCatIds);
-            for (const c of extraCats ?? []) {
-                catIdToName.set(c.id, c.name);
-            }
-        }
         const missingAccIds = Array.from(accountIdsNeeded).filter((id) => !accountsMap.has(id));
-        if (missingAccIds.length) {
-            const { data: extraAccs } = await supabase.from("accounts").select("id, name").in("id", missingAccIds);
-            for (const a of extraAccs ?? []) {
-                accountsMap.set(a.id, a.name);
-            }
-        }
+        const [{ data: extraCats }, { data: extraAccs }] = await Promise.all([
+            missingCatIds.length
+                ? supabase.from("categories").select("id, name, parent_id").in("id", missingCatIds)
+                : Promise.resolve({ data: [] as { id: string; name: string; parent_id: string | null }[] }),
+            missingAccIds.length
+                ? supabase.from("accounts").select("id, name").in("id", missingAccIds)
+                : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+        ]);
+        for (const c of extraCats ?? []) catIdToName.set(c.id, c.name);
+        for (const a of extraAccs ?? []) accountsMap.set(a.id, a.name);
         const currentMonthKey = thisMonthStart.slice(0, 7);
         const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const lastMonthKey = lastMonthDate.toISOString().slice(0, 7);

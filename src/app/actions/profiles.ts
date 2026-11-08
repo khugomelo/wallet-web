@@ -2,7 +2,7 @@
 
 /** User profile rows: theme, locale, avatar, names; used by dashboard layout. */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 
 export type ThemeMode = "light" | "dark" | "system";
 export type LanguageCode = "en" | "pt" | "es" | "fr";
@@ -67,9 +67,7 @@ const MAX_SIZE_MB = 2;
  */
 export async function updateProfile(formData: FormData): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const first_name = (formData.get("first_name") as string)?.trim() || null;
@@ -119,9 +117,7 @@ export async function updateProfile(formData: FormData): Promise<{ error?: strin
  */
 export async function saveTheme(theme: ThemeMode): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
@@ -137,9 +133,7 @@ export async function saveTheme(theme: ThemeMode): Promise<{ error?: string }> {
  */
 export async function saveLanguage(language: LanguageCode): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase

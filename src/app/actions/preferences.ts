@@ -2,7 +2,7 @@
 
 /** Per-user UI preferences (e.g. account ordering) stored in Supabase. */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 
 const ACCOUNT_ORDER_KEY = "account_order";
 const SETTLEMENTS_ORDER_KEY = "settlements_order";
@@ -19,9 +19,7 @@ export async function getAccountOrder(
   walletId: string
 ): Promise<string[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return [];
 
   const { data } = await supabase
@@ -50,9 +48,7 @@ export async function saveAccountOrder(
   order: string[]
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
@@ -76,9 +72,7 @@ export async function getSettlementsOrder(
   walletId: string
 ): Promise<string[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return [];
 
   const { data } = await supabase
@@ -102,9 +96,7 @@ export async function saveSettlementsOrder(
   order: string[]
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
@@ -136,9 +128,7 @@ export async function getSettlementsDisplayOptions(
   walletId: string
 ): Promise<SettlementsDisplayOptions> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return DEFAULT_SETTLEMENTS_DISPLAY;
 
   const { data } = await supabase
@@ -164,9 +154,7 @@ export async function saveSettlementsDisplayOptions(
   options: SettlementsDisplayOptions
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
@@ -202,9 +190,7 @@ export async function getBalanceDisplayOptions(
   walletId: string
 ): Promise<BalanceDisplayOptions> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return DEFAULT_DISPLAY;
 
   const { data } = await supabase
@@ -230,9 +216,7 @@ export async function saveBalanceDisplayOptions(
   options: BalanceDisplayOptions
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
@@ -258,9 +242,7 @@ export async function getStatementsHideBalances(
   walletId: string
 ): Promise<boolean> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return false;
 
   const { data } = await supabase
@@ -280,9 +262,7 @@ export async function saveStatementsHideBalances(
   hideBalances: boolean
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase
@@ -320,9 +300,7 @@ export async function getAccountsTableDisplayOptions(
   walletId: string
 ): Promise<AccountsTableDisplayOptions> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return DEFAULT_ACCOUNTS_DISPLAY;
 
   const { data } = await supabase
@@ -348,9 +326,7 @@ export async function saveAccountsTableDisplayOptions(
   options: AccountsTableDisplayOptions
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error: err } = await supabase
@@ -383,9 +359,7 @@ export async function getStatementsTableOrder(
   tableKey: StatementsTableOrderKey
 ): Promise<string[] | { categories: string[]; subcategories: Record<string, string[]> }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { categories: [], subcategories: {} };
 
   const { data } = await supabase
@@ -415,9 +389,7 @@ export async function saveStatementsTableOrder(
   order: { categories: string[]; subcategories: Record<string, string[]> }
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error } = await supabase

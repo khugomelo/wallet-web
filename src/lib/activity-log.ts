@@ -1,3 +1,4 @@
+import { getAuthUser } from "@/lib/supabase/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type LogPayload = {
@@ -17,9 +18,7 @@ export async function logActivity(
   supabase: SupabaseClient,
   args: LogPayload
 ): Promise<void> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return;
 
   await supabase.from("activity_log").insert({

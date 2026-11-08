@@ -1,11 +1,10 @@
 import { getRequestConfig } from 'next-intl/server';
-import { getOrEnsureProfile } from './app/actions/profiles';
-import { createClient } from './lib/supabase/server';
+import { getAuthUser } from './lib/supabase/server';
+import { getProfileForRequest } from './lib/request-cache';
 
 export default getRequestConfig(async () => {
     try {
-        const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const user = await getAuthUser();
 
         if (!user) {
             // User not authenticated, fallback to English
@@ -15,7 +14,7 @@ export default getRequestConfig(async () => {
             };
         }
 
-        const profile = await getOrEnsureProfile(user.id);
+        const profile = await getProfileForRequest(user.id);
         const locale = profile?.language || 'en';
 
         return {

@@ -2,7 +2,7 @@
 
 /** Wallets, members, split metadata, settlements, and helpers for shared-wallet UI. */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getAuthUser } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/activity-log";
 import { getOrEnsureProfile } from "@/app/actions/profiles";
 import { expenseShares, type SplitMethod } from "@/lib/expense-shares";
@@ -61,9 +61,7 @@ export async function createWallet(params: {
   default_split_method?: "equally" | "by_income" | "manual" | null;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: w, error: wErr } = await supabase
@@ -179,9 +177,7 @@ export async function updateWallet(
 
 export async function getWalletShareCode(walletId: string): Promise<{ shareCode?: string; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   // Use RPC function to get share code (bypasses RLS while checking membership)
@@ -217,9 +213,7 @@ export async function getWalletShareCode(walletId: string): Promise<{ shareCode?
 
 export async function joinWalletByCode(shareCode: string): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   // Use RPC function to join wallet (bypasses RLS while performing checks)
@@ -278,9 +272,7 @@ export async function joinWalletByCode(shareCode: string): Promise<{ error?: str
 
 export async function ensureCurrentWalletMemberName(walletId: string): Promise<{ updated?: boolean; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: selfMember, error: memberErr } = await supabase
@@ -335,9 +327,7 @@ function normalizeMembers(
 
 export async function getWalletMembers(walletId: string): Promise<{ members?: Array<{ user_id: string; role: string; email?: string }>; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   // 1. Try RPC first (joins auth.users; works when DB can read auth schema).
@@ -431,9 +421,7 @@ export async function softDeleteWallet(
   walletId: string
 ): Promise<{ hardDeleted?: boolean; softDeleted?: boolean; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   // Verify ownership
@@ -498,9 +486,7 @@ export async function undoDeleteWallet(
   walletId: string
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { error: updErr } = await supabase
@@ -544,9 +530,7 @@ export async function getWalletDetails(
   walletId: string
 ): Promise<{ details?: WalletDetails; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   // Fetch wallet info
@@ -617,9 +601,7 @@ export async function updateMemberIncome(
   incomeMonthly: number | null
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   // Verify user is member (owner) of this wallet
@@ -657,9 +639,7 @@ export async function addWalletMemberByName(
   memberName: string
 ): Promise<{ member?: { user_id: string; display_name: string; role: string }; error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const normalizedName = String(memberName || "").trim();
@@ -730,9 +710,7 @@ export async function removeWalletMember(
   memberId: string
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: ownerMembership } = await supabase
@@ -778,9 +756,7 @@ export async function linkWalletUserToJoinedMember(
   joinedMemberId: string
 ): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const { data: ownerMembership } = await supabase
@@ -890,24 +866,20 @@ export async function getWalletSettlements(
   error?: string;
 }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
-  // Verify user is member of this wallet
-  const { data: member } = await supabase
-    .from("wallet_members")
-    .select("role")
-    .eq("wallet_id", walletId)
-    .eq("user_id", user.id)
-    .single();
-  if (!member) return { error: "Not a member of this wallet" };
-  const { data: wallet, error: walletErr } = await supabase
-    .from("wallets")
-    .select("default_split_method, split_type, split_mode, shared_option")
-    .eq("id", walletId)
-    .single();
+  const [{ data: wallet, error: walletErr }, { data: members, error: membersErr }] = await Promise.all([
+    supabase
+      .from("wallets")
+      .select("default_split_method, split_type, split_mode, shared_option")
+      .eq("id", walletId)
+      .single(),
+    supabase.from("wallet_members").select("user_id, member_name, income_monthly").eq("wallet_id", walletId),
+  ]);
+  if (membersErr) return { error: membersErr.message };
+  // Membership check from the member list we need anyway (saves a round trip).
+  if (!(members ?? []).some((m) => m.user_id === user.id)) return { error: "Not a member of this wallet" };
   if (walletErr || !wallet) return { error: walletErr?.message ?? "Wallet not found" };
 
   const isSplitWallet =
@@ -922,33 +894,8 @@ export async function getWalletSettlements(
     | "by_income"
     | "manual";
 
-  const { data: members, error: membersErr } = await supabase
-    .from("wallet_members")
-    .select("user_id, member_name, income_monthly")
-    .eq("wallet_id", walletId);
-  if (membersErr) return { error: membersErr.message };
   if (!members || members.length === 0) return { settlements: [] };
-
   const memberIds = members.map((m) => m.user_id);
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name, avatar_url")
-    .in("id", memberIds);
-  const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
-
-  const memberInfo = new Map(
-    members.map((m: any) => [
-      m.user_id,
-      {
-        profile: profileMap.get(m.user_id),
-        email:
-          [profileMap.get(m.user_id)?.first_name, profileMap.get(m.user_id)?.last_name].filter(Boolean).join(" ").trim() ||
-          m.member_name ||
-          "Member",
-        income: Number(m.income_monthly ?? 0),
-      },
-    ])
-  );
 
   const now = new Date();
   const granularity = period?.granularity === "year" ? "year" : "month";
@@ -970,47 +917,69 @@ export async function getWalletSettlements(
           new Date(Date.UTC(selectedYear, selectedMonth, 0)).getUTCDate()
         ).padStart(2, "0")}`;
 
-  const { data: expenses, error: txErr } = await supabase
-    .from("transactions")
-    .select("id, date, amount, paid_by_member_id, split_method_override")
-    .eq("wallet_id", walletId)
-    .eq("status", "confirmed")
-    .eq("type", "expense")
-    .gte("date", periodStart)
-    .lte("date", periodEnd);
+  // All independent: fetch in one parallel round instead of five sequential ones.
+  const [
+    { data: profiles },
+    { data: expenses, error: txErr },
+    { data: transfers, error: transfersErr },
+    { data: incomesLocal, error: incomesErr },
+    { data: incomesUserOtherWallets, error: incomesOtherErr },
+  ] = await Promise.all([
+    supabase.from("profiles").select("id, first_name, last_name, avatar_url").in("id", memberIds),
+    supabase
+      .from("transactions")
+      .select("id, date, amount, paid_by_member_id, split_method_override")
+      .eq("wallet_id", walletId)
+      .eq("status", "confirmed")
+      .eq("type", "expense")
+      .gte("date", periodStart)
+      .lte("date", periodEnd),
+    supabase
+      .from("transactions")
+      .select("amount, paid_by_member_id, received_by_member_id")
+      .eq("wallet_id", walletId)
+      .eq("status", "confirmed")
+      .eq("type", "transfer")
+      .gte("date", periodStart)
+      .lte("date", periodEnd),
+    supabase
+      .from("transactions")
+      .select("date, amount, received_by_member_id, created_by")
+      .eq("wallet_id", walletId)
+      .eq("status", "confirmed")
+      .eq("type", "income")
+      .gte("date", periodStart)
+      .lte("date", periodEnd),
+    supabase
+      .from("transactions")
+      .select("date, amount, received_by_member_id, created_by")
+      .neq("wallet_id", walletId)
+      .eq("status", "confirmed")
+      .eq("type", "income")
+      .eq("income_scope", "user")
+      .in("received_by_member_id", memberIds)
+      .gte("date", periodStart)
+      .lte("date", periodEnd),
+  ]);
   if (txErr) return { error: txErr.message };
-
-  const { data: transfers, error: transfersErr } = await supabase
-    .from("transactions")
-    .select("amount, paid_by_member_id, received_by_member_id")
-    .eq("wallet_id", walletId)
-    .eq("status", "confirmed")
-    .eq("type", "transfer")
-    .gte("date", periodStart)
-    .lte("date", periodEnd);
   if (transfersErr) return { error: transfersErr.message };
-
-  const { data: incomesLocal, error: incomesErr } = await supabase
-    .from("transactions")
-    .select("date, amount, received_by_member_id, created_by")
-    .eq("wallet_id", walletId)
-    .eq("status", "confirmed")
-    .eq("type", "income")
-    .gte("date", periodStart)
-    .lte("date", periodEnd);
   if (incomesErr) return { error: incomesErr.message };
-
-  const { data: incomesUserOtherWallets, error: incomesOtherErr } = await supabase
-    .from("transactions")
-    .select("date, amount, received_by_member_id, created_by")
-    .neq("wallet_id", walletId)
-    .eq("status", "confirmed")
-    .eq("type", "income")
-    .eq("income_scope", "user")
-    .in("received_by_member_id", memberIds)
-    .gte("date", periodStart)
-    .lte("date", periodEnd);
   if (incomesOtherErr) return { error: incomesOtherErr.message };
+
+  const profileMap = new Map((profiles ?? []).map((p: any) => [p.id, p]));
+  const memberInfo = new Map(
+    members.map((m: any) => [
+      m.user_id,
+      {
+        profile: profileMap.get(m.user_id),
+        email:
+          [profileMap.get(m.user_id)?.first_name, profileMap.get(m.user_id)?.last_name].filter(Boolean).join(" ").trim() ||
+          m.member_name ||
+          "Member",
+        income: Number(m.income_monthly ?? 0),
+      },
+    ])
+  );
 
   const incomes = [...(incomesLocal ?? []), ...(incomesUserOtherWallets ?? [])];
   const monthStart = periodStart;
@@ -1192,35 +1161,49 @@ export async function getWalletSplitInfo(
   error?: string;
 }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
-  // Fetch wallet split_type and shared_option
-  const { data: wallet, error: walletErr } = await supabase
-    .from("wallets")
-    .select("split_type, shared_option, tracking_mode, split_mode, default_split_method, is_shared")
-    .eq("id", walletId)
-    .single();
+  const [{ data: wallet, error: walletErr }, { data: memberData, error: memberErr }] = await Promise.all([
+    supabase
+      .from("wallets")
+      .select("split_type, shared_option, tracking_mode, split_mode, default_split_method, is_shared")
+      .eq("id", walletId)
+      .single(),
+    supabase.from("wallet_members").select("id, user_id, member_name").eq("wallet_id", walletId),
+  ]);
   if (walletErr || !wallet) return { error: walletErr?.message ?? "Wallet not found" };
-
-  // Fetch wallet members
-  const { data: memberData, error: memberErr } = await supabase
-    .from("wallet_members")
-    .select("id, user_id, member_name")
-    .eq("wallet_id", walletId);
 
   const memberErrorMessage = memberErr ? memberErr.message : undefined;
   const memberIds = (memberData ?? []).map((m: any) => m.user_id);
-  let profileRows: any[] = [];
-  if (memberIds.length) {
-    const profilesRes = await supabase
-      .from("profiles")
-      .select("id, first_name, last_name, avatar_url")
-      .in("id", memberIds);
-    profileRows = profilesRes.data ?? [];
-  }
+  const { start: monthStart, end: monthEnd } = utcMonthRangeForDate(
+    options?.referenceDate?.trim() || new Date().toISOString().slice(0, 10)
+  );
+  // Profiles and this month's incomes are independent: one parallel round.
+  const [profilesRes, { data: incomesLocalSplit }, { data: incomesOtherSplit }] = await Promise.all([
+    memberIds.length
+      ? supabase.from("profiles").select("id, first_name, last_name, avatar_url").in("id", memberIds)
+      : Promise.resolve({ data: [] as any[] }),
+    supabase
+      .from("transactions")
+      .select("amount, received_by_member_id, created_by")
+      .eq("wallet_id", walletId)
+      .eq("status", "confirmed")
+      .eq("type", "income")
+      .gte("date", monthStart)
+      .lte("date", monthEnd),
+    supabase
+      .from("transactions")
+      .select("amount, received_by_member_id, created_by")
+      .neq("wallet_id", walletId)
+      .eq("status", "confirmed")
+      .eq("type", "income")
+      .eq("income_scope", "user")
+      .in("received_by_member_id", memberIds)
+      .gte("date", monthStart)
+      .lte("date", monthEnd),
+  ]);
+  const profileRows: any[] = profilesRes.data ?? [];
   const profilesById = new Map((profileRows ?? []).map((p: any) => [p.id, p]));
 
   // Format members - prioritize proper names and avoid UUID-like fallbacks in UI.
@@ -1243,27 +1226,6 @@ export async function getWalletSplitInfo(
     };
   });
 
-  const { start: monthStart, end: monthEnd } = utcMonthRangeForDate(
-    options?.referenceDate?.trim() || new Date().toISOString().slice(0, 10)
-  );
-  const { data: incomesLocalSplit } = await supabase
-    .from("transactions")
-    .select("amount, received_by_member_id, created_by")
-    .eq("wallet_id", walletId)
-    .eq("status", "confirmed")
-    .eq("type", "income")
-    .gte("date", monthStart)
-    .lte("date", monthEnd);
-  const { data: incomesOtherSplit } = await supabase
-    .from("transactions")
-    .select("amount, received_by_member_id, created_by")
-    .neq("wallet_id", walletId)
-    .eq("status", "confirmed")
-    .eq("type", "income")
-    .eq("income_scope", "user")
-    .in("received_by_member_id", memberIds)
-    .gte("date", monthStart)
-    .lte("date", monthEnd);
   const currentMonthIncomes = [...(incomesLocalSplit ?? []), ...(incomesOtherSplit ?? [])];
   const monthIncomeByMember = new Map<string, number>();
   for (const m of members) monthIncomeByMember.set(m.user_id, 0);
@@ -1352,10 +1314,7 @@ export async function getWalletSplitInfo(
 }
 
 export async function getCurrentUserId(): Promise<{ userId?: string; error?: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
   return { userId: user.id };
 }
@@ -1369,9 +1328,7 @@ export async function confirmSettlementTransfer(params: {
   description?: string;
 }): Promise<{ error?: string }> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return { error: "Not authenticated" };
 
   const membership = await supabase
@@ -1488,9 +1445,7 @@ export async function getTransactionsByMember(
   opts?: { limit?: number; fromDate?: string; toDate?: string }
 ): Promise<TransactionByMemberRow[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return [];
 
   const membership = await supabase
@@ -1565,9 +1520,7 @@ export async function getMemberIncomeExpenseSeries(
   toDate: string
 ): Promise<MemberIncomeExpensePoint[]> {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser();
   if (!user) return [];
 
   const membership = await supabase
