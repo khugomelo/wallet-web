@@ -97,7 +97,10 @@ export function ExpenseFormModal({
   const localeTag = intlLocaleFromAppLocale(locale);
   const t = useTranslations("transactions.form");
   const { showToast } = useToast();
-  const { currentWalletId } = useWallet();
+  const { currentWalletId: activeWalletId, wallets } = useWallet();
+  // Wallet the expense goes to: new expenses can pick another wallet without switching the sidebar one.
+  const [pickedWalletId, setPickedWalletId] = useState<string | null>(null);
+  const currentWalletId = pickedWalletId ?? activeWalletId;
   const overlayRef = useRef<HTMLDivElement>(null);
 
   const { accounts, categories, categoriesFlat, setCategories, setCategoriesFlat } =
@@ -194,7 +197,20 @@ export function ExpenseFormModal({
       autoSelectedMember.current = false;
       appliedDefaultSplitForSession.current = false;
     }
+    if (!open) setPickedWalletId(null);
   }, [open, currentWalletId]);
+
+  function changeWallet(id: string) {
+    setPickedWalletId(id === activeWalletId ? null : id);
+    // Categories, accounts and members belong to a wallet, so clear what was picked for the old one.
+    setCategoryId("");
+    setSubcategoryId("");
+    setAccountFromId("");
+    setPaidByMemberId(null);
+    setManualSplits([]);
+    autoSelectedMember.current = false;
+    appliedDefaultSplitForSession.current = false;
+  }
 
   useEffect(() => {
     if (!open || !currentWalletId) return;
@@ -479,7 +495,7 @@ export function ExpenseFormModal({
       document.body.style.overflow = "";
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when opening new
-  }, [open, currentWalletId, onClose, loading, loadingData, resetForm, mode, transactionId, copyFromTransactionId, copyFromRecurringId]);
+  }, [open, activeWalletId, onClose, loading, loadingData, resetForm, mode, transactionId, copyFromTransactionId, copyFromRecurringId]);
 
   useEffect(() => {
     if (!open || !currentWalletId) return;
@@ -923,6 +939,26 @@ export function ExpenseFormModal({
               }`}
             >
             <div className="min-h-0 overflow-y-auto min-w-0 space-y-2.5 lg:pr-1 friendly-scroll">
+              {!isEdit && wallets.filter((w) => w.is_active).length > 1 && (
+                <div>
+                  <label htmlFor="expense-wallet" className="block text-xs font-medium mb-1">{t("fields.wallet")}</label>
+                  <select
+                    id="expense-wallet"
+                    value={currentWalletId}
+                    onChange={(e) => changeWallet(e.target.value)}
+                    disabled={loading}
+                    className={inputClass}
+                  >
+                    {wallets
+                      .filter((w) => w.is_active)
+                      .map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium mb-1">{t("fields.date")}</label>
                 <TransactionDateInput

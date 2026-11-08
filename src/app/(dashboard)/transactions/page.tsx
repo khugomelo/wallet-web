@@ -18,6 +18,7 @@ import {
 } from "@/lib/transactions-hub-row-mapper";
 import { workDayDateInMonth } from "@/lib/recurrence";
 import { DashboardPageHeader } from "@/components/DashboardPageHeader";
+import { ExportCsvButton } from "@/components/ExportCsvButton";
 import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
@@ -288,7 +289,10 @@ export default async function TransactionsPage() {
                 </>
             ) : (
                 <div className="space-y-8">
-                    <DashboardPageHeader title={t("title")} description={t("subtitle")} />
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                        <DashboardPageHeader title={t("title")} description={t("subtitle")} />
+                        <ExportCsvButton />
+                    </div>
                     <TransactionsTabs
                         confirmed={confirmed}
                         pending={pending}

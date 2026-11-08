@@ -760,7 +760,8 @@
                 "defaultSplitMethodHint": "Método padrão da carteira: {method}",
                 "notSpecified": "Não especificado",
                 "noMembers": "Nenhum membro encontrado.",
-                "splitValue": "Valor"
+                "splitValue": "Valor",
+                "wallet": "Carteira"
             },
             "options": {
                 "saveAsPending": "Guardar como pendente",
@@ -869,6 +870,39 @@
                 "recurringHint": "As ocorrências futuras serão criadas na data selecionada e mostradas como Pendentes até confirmar ou cancelar.",
                 "newTransactionSubtitle": "Escolha um tipo e depois indique montante, categoria e contas.",
                 "editTransactionSubtitle": "Altere os campos e guarde. As transações pendentes não alteram saldos até confirmar."
+            }
+        },
+        "export": {
+            "button": "Exportar CSV",
+            "title": "Exportar despesas",
+            "message": "A parte de cada pessoa é calculada como se todos já tivessem acertado contas.",
+            "confirm": "Descarregar CSV",
+            "cancel": "Cancelar",
+            "wallet": "Carteira",
+            "allWallets": "Todas as carteiras",
+            "period": "Período",
+            "from": "De",
+            "to": "Até",
+            "failed": "Falha na exportação",
+            "empty": "Sem despesas neste período",
+            "yes": "Sim",
+            "no": "Não",
+            "presets": {
+                "thisMonth": "Este mês",
+                "lastMonth": "Mês passado",
+                "thisYear": "Este ano",
+                "lastYear": "Ano passado",
+                "custom": "Personalizado"
+            },
+            "columns": {
+                "wallet": "Carteira",
+                "description": "Descritivo",
+                "total": "Total",
+                "date": "Data",
+                "subcategory": "Sub-Categoria",
+                "category": "Categoria Principal",
+                "essential": "Essencial?",
+                "paidBy": "Pago por"
             }
         }
     },

@@ -760,7 +760,8 @@
                 "defaultSplitMethodHint": "Méthode par défaut du portefeuille: {method}",
                 "notSpecified": "Non spécifié",
                 "noMembers": "Aucun membre trouvé.",
-                "splitValue": "Valeur"
+                "splitValue": "Valeur",
+                "wallet": "Portefeuille"
             },
             "options": {
                 "saveAsPending": "Enregistrer comme en attente",
@@ -869,6 +870,39 @@
                 "recurringHint": "Les occurrences futures seront créées à la date sélectionnée et affichées comme En attente jusqu'à confirmation ou annulation.",
                 "newTransactionSubtitle": "Choisissez un type, puis saisissez le montant, la catégorie et les comptes.",
                 "editTransactionSubtitle": "Modifiez les champs et enregistrez. Les transactions en attente ne changent pas les soldes avant confirmation."
+            }
+        },
+        "export": {
+            "button": "Exporter CSV",
+            "title": "Exporter les dépenses",
+            "message": "La part de chacun est calculée comme si tout le monde avait déjà réglé ses comptes.",
+            "confirm": "Télécharger CSV",
+            "cancel": "Annuler",
+            "wallet": "Portefeuille",
+            "allWallets": "Tous les portefeuilles",
+            "period": "Période",
+            "from": "Du",
+            "to": "Au",
+            "failed": "Échec de l'export",
+            "empty": "Aucune dépense sur cette période",
+            "yes": "Oui",
+            "no": "Non",
+            "presets": {
+                "thisMonth": "Ce mois-ci",
+                "lastMonth": "Mois dernier",
+                "thisYear": "Cette année",
+                "lastYear": "Année dernière",
+                "custom": "Personnalisé"
+            },
+            "columns": {
+                "wallet": "Portefeuille",
+                "description": "Description",
+                "total": "Total",
+                "date": "Date",
+                "subcategory": "Sous-catégorie",
+                "category": "Catégorie",
+                "essential": "Essentiel ?",
+                "paidBy": "Payé par"
             }
         }
     },

@@ -760,7 +760,8 @@
                 "defaultSplitMethodHint": "Wallet default split method: {method}",
                 "notSpecified": "Not specified",
                 "noMembers": "No members found.",
-                "splitValue": "Value"
+                "splitValue": "Value",
+                "wallet": "Wallet"
             },
             "options": {
                 "saveAsPending": "Save as pending",
@@ -869,6 +870,39 @@
                 "recurringHint": "Future occurrences will be created on the selected date and shown as Pending until you confirm or cancel them.",
                 "newTransactionSubtitle": "Pick a type, then enter amount, category, and accounts.",
                 "editTransactionSubtitle": "Update fields and save. Pending transactions do not change balances until confirmed."
+            }
+        },
+        "export": {
+            "button": "Export CSV",
+            "title": "Export expenses",
+            "message": "Each person's share is split as if everyone had already settled up.",
+            "confirm": "Download CSV",
+            "cancel": "Cancel",
+            "wallet": "Wallet",
+            "allWallets": "All wallets",
+            "period": "Period",
+            "from": "From",
+            "to": "To",
+            "failed": "Export failed",
+            "empty": "No expenses in this period",
+            "yes": "Yes",
+            "no": "No",
+            "presets": {
+                "thisMonth": "This month",
+                "lastMonth": "Last month",
+                "thisYear": "This year",
+                "lastYear": "Last year",
+                "custom": "Custom"
+            },
+            "columns": {
+                "wallet": "Wallet",
+                "description": "Description",
+                "total": "Total",
+                "date": "Date",
+                "subcategory": "Subcategory",
+                "category": "Category",
+                "essential": "Essential?",
+                "paidBy": "Paid by"
             }
         }
     },

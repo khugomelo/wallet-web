@@ -433,7 +433,9 @@ export function SettlementsSection({
       : rawMonthLabel;
     const settlementDescription = t("settlementDescription", { month: monthLabel });
     const now = new Date();
-    const transactionDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    // Settle inside the period being viewed: settling October on Nov 3 must land on Oct 31, not count toward November.
+    const transactionDate = periodEnd < today ? periodEnd : today;
     const res = await confirmSettlementTransfer({
       walletId,
       payerMemberId: confirmFlow.fromId,

@@ -760,7 +760,8 @@
                 "defaultSplitMethodHint": "Método por defecto de la cartera: {method}",
                 "notSpecified": "No especificado",
                 "noMembers": "No se encontraron miembros.",
-                "splitValue": "Valor"
+                "splitValue": "Valor",
+                "wallet": "Cartera"
             },
             "options": {
                 "saveAsPending": "Guardar como pendiente",
@@ -869,6 +870,39 @@
                 "recurringHint": "Las futuras ocurrencias se crearán en la fecha seleccionada y se mostrarán como Pendientes hasta que las confirmes o canceles.",
                 "newTransactionSubtitle": "Elige un tipo e indica importe, categoría y cuentas.",
                 "editTransactionSubtitle": "Ajusta los campos y guarda. Las pendientes no cambian saldos hasta confirmarlas."
+            }
+        },
+        "export": {
+            "button": "Exportar CSV",
+            "title": "Exportar gastos",
+            "message": "La parte de cada persona se calcula como si todos ya hubieran saldado cuentas.",
+            "confirm": "Descargar CSV",
+            "cancel": "Cancelar",
+            "wallet": "Cartera",
+            "allWallets": "Todas las carteras",
+            "period": "Periodo",
+            "from": "Desde",
+            "to": "Hasta",
+            "failed": "Error al exportar",
+            "empty": "No hay gastos en este periodo",
+            "yes": "Sí",
+            "no": "No",
+            "presets": {
+                "thisMonth": "Este mes",
+                "lastMonth": "Mes pasado",
+                "thisYear": "Este año",
+                "lastYear": "Año pasado",
+                "custom": "Personalizado"
+            },
+            "columns": {
+                "wallet": "Cartera",
+                "description": "Descripción",
+                "total": "Total",
+                "date": "Fecha",
+                "subcategory": "Subcategoría",
+                "category": "Categoría",
+                "essential": "¿Esencial?",
+                "paidBy": "Pagado por"
             }
         }
     },

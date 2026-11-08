@@ -5,6 +5,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/activity-log";
 import { getOrEnsureProfile } from "@/app/actions/profiles";
+import { expenseShares, type SplitMethod } from "@/lib/expense-shares";
 
 const SETTLEMENT_CATEGORY_NAMES = new Set(["settlement", "acerto", "liquidacion", "reglement"]);
 
@@ -1091,7 +1092,9 @@ export async function getWalletSettlements(
     transferAdjustments.set(id, 0);
   }
 
-  const totalIncomeFromMemberSettings = members.reduce((sum: number, m: any) => sum + Number(m.income_monthly ?? 0), 0);
+  const configuredIncomeByMember = new Map<string, number>(
+    members.map((m: any) => [m.user_id, Number(m.income_monthly ?? 0)])
+  );
 
   for (const tx of (expenses ?? []) as Array<{
     id: string;
@@ -1110,53 +1113,18 @@ export async function getWalletSettlements(
       }
     }
 
-    const method = (tx.split_method_override as "equally" | "by_income" | "manual" | null) || defaultMethod;
-
-    if (method === "manual") {
-      const manual = splitsByTx.get(tx.id) ?? [];
-      const sumPct = manual.reduce((sum, s) => sum + s.percentage, 0);
-      if (sumPct > 0) {
-        for (const s of manual) {
-          if (!totalShare.has(s.member_id)) continue;
-          const share = amount * (s.percentage / sumPct);
-          totalShare.set(s.member_id, (totalShare.get(s.member_id) ?? 0) + share);
-        }
-        continue;
-      }
-      // Fallback to equally if manual data is missing.
-    }
-
-    if (method === "by_income") {
-      const monthKey = String(tx.date).slice(0, 7);
-      const monthMap = incomeByMonthAndMember.get(monthKey);
-      let totalMonthTx = 0;
-      const perMemberMonthIncome = new Map<string, number>();
-      for (const memberId of memberIds) {
-        const v = monthMap?.get(memberId) ?? 0;
-        perMemberMonthIncome.set(memberId, v);
-        totalMonthTx += v;
-      }
-      if (totalMonthTx > 0) {
-        for (const memberId of memberIds) {
-          const income = perMemberMonthIncome.get(memberId) ?? 0;
-          const share = amount * (income / totalMonthTx);
-          totalShare.set(memberId, (totalShare.get(memberId) ?? 0) + share);
-        }
-        continue;
-      }
-      if (totalIncomeFromMemberSettings > 0) {
-        for (const memberId of memberIds) {
-          const income = memberInfo.get(memberId)?.income ?? 0;
-          const share = amount * (income / totalIncomeFromMemberSettings);
-          totalShare.set(memberId, (totalShare.get(memberId) ?? 0) + share);
-        }
-        continue;
-      }
-    }
-
-    const equalShare = amount / memberIds.length;
-    for (const memberId of memberIds) {
-      totalShare.set(memberId, (totalShare.get(memberId) ?? 0) + equalShare);
+    const method = (tx.split_method_override as SplitMethod | null) || defaultMethod;
+    const shares = expenseShares({
+      amount,
+      date: String(tx.date),
+      method,
+      memberIds,
+      manualSplits: splitsByTx.get(tx.id),
+      incomeByMonthAndMember,
+      configuredIncomeByMember,
+    });
+    for (const [memberId, share] of Array.from(shares)) {
+      totalShare.set(memberId, (totalShare.get(memberId) ?? 0) + share);
     }
   }
 
